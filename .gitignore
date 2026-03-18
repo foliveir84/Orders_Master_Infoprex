@@ -1,0 +1,29 @@
+# Ambientes e Variáveis de Ambiente
+.env
+venv/
+env/
+.venv/
+
+# Ficheiros Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ficheiros de dados / testes
+*.csv
+*.xlsx
+Guia.txt
+Ficheiro_exemplo.txt
+
+# Editor / OS
+.vscode/
+.DS_Store
+.idea/
+
+# Streamlit e Jupyter
+.streamlit/
+.ipynb_checkpoints/
+*.ipynb
+
+# NOTA: O Ficheiro requirements.txt, laboratorios.json e localizacoes.json 
+# não devem ser ignorados, pois são fundamentais para o funcionamento.
