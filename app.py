@@ -828,8 +828,8 @@ def main():
     with tab_redistribuicao:
         if not st.session_state.df_base_detalhada.empty:
             st.error("### 🚨 **ATENÇÃO: FUNÇÃO EM DESENVOLVIMENTO** 🚨")
-            st.error(
-                "⚠️ **Aviso:** Esta função ainda está em desenvolvimento | Tem erros de calculo | Apenas para Desenvolvimento.")
+            st.warning(
+                "### ⚠️ **Aviso:** Esta função ainda está em desenvolvimento | Tem erros de calculo | Apenas para Desenvolvimento. ⚠️")
             st.subheader("⚙️ Configurações de Redistribuição")
             col_r1, col_r2 = st.columns(2)
             with col_r1:
