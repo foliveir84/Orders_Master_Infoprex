@@ -155,8 +155,18 @@ def criar_tabela_dimensao(df):
     return df_univ
 
 
+def get_file_modified_time(path):
+    """Obtem a data de modificacao de um ficgeiro para que se ele for modificado no 
+    github ou sistema imediatamente a chache seja limpa o seja recarregado
+    """
+    return os.path.getmtime(path) if os.path.exists(path) else 0
+
+
 @st.cache_data
-def carregar_laboratorios():
+def carregar_laboratorios(mtime):
+    """O parametro mtime é usado apenas para invalidar a cache quando o ficheiro é modificado,
+    garantindo que as atualizações são refletidas imediatamente."""
+
     """Carrega o dicionário de laboratórios do ficheiro JSON."""
     try:
         if os.path.exists('laboratorios.json'):
@@ -553,7 +563,8 @@ def render_sidebar():
     st.sidebar.markdown(
         "<small>Selecione um ou mais laboratórios para filtrar (Ignorado se usar txt abaixo).</small>", unsafe_allow_html=True)
 
-    dicionario_labs = carregar_laboratorios()
+    dicionario_labs = carregar_laboratorios(
+        get_file_modified_time('laboratorios.json'))
     lista_nomes_labs = sorted(list(dicionario_labs.keys()))
 
     labs_selecionados = st.sidebar.multiselect(
