@@ -827,6 +827,7 @@ def main():
 
     with tab_redistribuicao:
         if not st.session_state.df_base_detalhada.empty:
+            st.error("### 🚨 **ATENÇÃO: FUNÇÃO EM DESENVOLVIMENTO** 🚨")
             st.error(
                 "⚠️ **Aviso:** Esta função ainda está em desenvolvimento | Tem erros de calculo | Apenas para Desenvolvimento.")
             st.subheader("⚙️ Configurações de Redistribuição")
