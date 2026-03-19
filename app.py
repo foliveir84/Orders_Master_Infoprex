@@ -9,6 +9,7 @@ from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill
 from processar_infoprex import ler_ficheiro_infoprex, extrair_codigos_txt
+from stockreorder import gerar_plano_redistribuicao
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -590,16 +591,8 @@ def main():
             
     st.divider()
     
-    # --- Contolos de UI para a Lógica de Negócio ---
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        anterior = st.toggle("Média Ponderada com Base no mês ANTERIOR?")
-    with col_t2:
-        on = st.toggle("Ver Detalhe de Sell Out?")
-        
-    st.subheader("Indicar o numero de meses a prever a encomenda (pode ser número décimal. Ex. 1.5 meses)")
-    valor = st.number_input(label="Meses a prever", label_visibility="collapsed", min_value=1.0, max_value=4.0, value=1.0, step=0.1, format="%.1f")
-    st.write(f"A Preparar encomenda para {valor:.1f} Meses")
+    # --- Controlo Global (Aplicado a ambos os módulos) ---
+    anterior = st.toggle("Média Ponderada com Base no mês ANTERIOR?")
 
     # Inicializa estado na sessão para manter as dataframes
     if 'df_base_agrupada' not in st.session_state:
@@ -608,6 +601,8 @@ def main():
         st.session_state.df_univ = pd.DataFrame()
         st.session_state.erros_ficheiros = []
         st.session_state.codigos_invalidos = []
+        st.session_state.last_labs = None
+        st.session_state.last_txt_name = None
     
     # ==============================================================
     # PASSO 1: Agregação Base Pesada (Ao clicar no botão)
@@ -639,7 +634,6 @@ def main():
                     df_detalhada = combina_e_agrega_df(df_base.copy(), df_univ)
                     df_detalhada = remover_linhas_sem_vendas_e_stock(df_detalhada)
                     df_detalhada = df_detalhada.rename(columns={'PVP': 'PVP_Médio'})
-                    # Nota: O mapeamento de Title e tradução já foi feito por _dict_locs
                     
                     df_agrupada = sellout_total(df_base.copy(), df_univ)
                     
@@ -655,79 +649,125 @@ def main():
         else:
             st.sidebar.error("Por favor, carregue pelo menos um ficheiro Infoprex.")
 
-    # Verificar se os filtros atuais são diferentes
     current_txt_name = opcoes_sidebar['ficheiro_codigos'].name if opcoes_sidebar['ficheiro_codigos'] else None
-    filtros_alterados = False
-    if not st.session_state.df_base_agrupada.empty:
-        if (opcoes_sidebar['labs_selecionados'] != st.session_state.last_labs) or (current_txt_name != st.session_state.last_txt_name):
-            filtros_alterados = True
-
-    # Mostrar Avisos e Erros
-    if filtros_alterados:
-        st.warning("⚠️ **Filtros Modificados!** Os dados apresentados abaixo encontram-se desatualizados em relação à seleção da sidebar. Por favor, clique novamente em **'Processar Dados'**.")
+    if not st.session_state.df_base_agrupada.empty and ((opcoes_sidebar['labs_selecionados'] != st.session_state.last_labs) or (current_txt_name != st.session_state.last_txt_name)):
+        st.warning("⚠️ **Filtros Modificados!** Os dados apresentados abaixo encontram-se desatualizados. Clique novamente em **'Processar Dados'**.")
         
-    if st.session_state.get('erros_ficheiros'):
-        for erro in st.session_state.erros_ficheiros:
-            st.error(f"❌ {erro}")
-            
-    if st.session_state.get('codigos_invalidos'):
-        st.warning(f"⚠️ **Atenção:** As seguintes linhas foram eliminadas porque o CÓDIGO não pôde ser convertido para inteiro: {', '.join(map(str, st.session_state.codigos_invalidos))}")
+    for erro in st.session_state.erros_ficheiros: st.error(f"❌ {erro}")
+    if st.session_state.codigos_invalidos: st.warning(f"⚠️ **Atenção:** As seguintes linhas foram eliminadas porque o CÓDIGO não pôde ser convertido para inteiro: {', '.join(map(str, st.session_state.codigos_invalidos))}")
         
     # ==============================================================
-    # PASSO 2: Cálculo da Proposta (Em tempo real)
+    # INTERFACE DE RESULTADOS (ABAS)
     # ==============================================================
-    if not st.session_state.df_base_agrupada.empty:
-        # 1. Selecionar a dataframe correta baseada no toggle de detalhe
-        if on:
-            df_selecionada = st.session_state.df_base_detalhada.copy()
-        else:
-            df_selecionada = st.session_state.df_base_agrupada.copy()
-            
-        # 2. Calcular os índices para a média ponderada
-        colunas_totais = list(df_selecionada.columns)
-        idx_tuni = colunas_totais.index('T Uni')
-        if anterior:
-            indice_colunas = [idx_tuni-2, idx_tuni-3, idx_tuni-4, idx_tuni-5] 
-        else:
-            indice_colunas = [idx_tuni-1, idx_tuni-2, idx_tuni-3, idx_tuni-4]
-            
-        cols_selecionadas = [df_selecionada.columns[i] for i in indice_colunas]
-        
-        # 3. Processar as Propostas instantaneamente
-        df_final = processar_logica_negocio(
-            df_selecionada, 
-            df_esgotados, 
-            df_nao_comprar, 
-            cols_selecionadas, 
-            [0.4, 0.3, 0.2, 0.1], 
-            valor, 
-            agrupado=not on
-        )
-        
-        st.success(f"Dados prontos! Total de linhas: {len(df_final)}")
-        
-        # Ocultar a coluna 'CLA' na view web
-        df_view = df_final.drop(columns=['CLA'], errors='ignore')
-        
-        # Aplicar os estilos css
-        st_styled = df_view.style.apply(aplicar_destaques, axis=1).format({'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P.CUSTO': '{:.2f}'}, na_rep="")
-        st.dataframe(st_styled, width='stretch', hide_index=True)
-        
-        # Gerar Excel com os valores reais (onde T Uni recálcula as coisas em Background etc.)
-        # 5. Exportação Excel (sem a coluna CLA)
-        excel_data = formatar_excel(df_view)
-        st.download_button(
-            label="Download Excel", 
-            data=excel_data, 
-            file_name='Sell_Out_GRUPO.xlsx', 
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+    tab_encomendas, tab_redistribuicao = st.tabs(["📊 Encomendas (Sell Out)", "🔄 Redistribuição Inteligente"])
+    
+    with tab_encomendas:
+        if not st.session_state.df_base_agrupada.empty:
+            # --- Contolos de UI Locais ---
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                on = st.toggle("Ver Detalhe de Sell Out?")
+            with col_t2:
+                st.write("") # Espaçador
+                
+            st.subheader("Indicar o numero de meses a prever a encomenda")
+            valor = st.number_input(label="Meses a prever", label_visibility="collapsed", min_value=1.0, max_value=4.0, value=1.0, step=0.1, format="%.1f", key="input_meses_encomenda")
+            st.write(f"A Preparar encomenda para {valor:.1f} Meses")
 
-        # st.divider()
-        # with st.expander(f"Ver Dimensão Universal (CNPs > 1999999) - {len(st.session_state.df_univ)} registos"):
-        #     st.dataframe(st.session_state.df_univ, width='stretch', hide_index=True)
-    else:
-        st.info("Nenhum dado processado ainda.")
+            # 1. Selecionar a dataframe correta
+            if on:
+                df_selecionada = st.session_state.df_base_detalhada.copy()
+            else:
+                df_selecionada = st.session_state.df_base_agrupada.copy()
+                
+            # 2. Calcular os índices para a média ponderada
+            colunas_totais = list(df_selecionada.columns)
+            idx_tuni = colunas_totais.index('T Uni')
+            if anterior:
+                indice_colunas = [idx_tuni-2, idx_tuni-3, idx_tuni-4, idx_tuni-5] 
+            else:
+                indice_colunas = [idx_tuni-1, idx_tuni-2, idx_tuni-3, idx_tuni-4]
+                
+            cols_selecionadas = [df_selecionada.columns[i] for i in indice_colunas]
+            
+            # 3. Processar as Propostas instantaneamente
+            df_final = processar_logica_negocio(
+                df_selecionada, 
+                df_esgotados, 
+                df_nao_comprar, 
+                cols_selecionadas, 
+                [0.4, 0.3, 0.2, 0.1], 
+                valor, 
+                agrupado=not on
+            )
+            
+            st.success(f"Dados prontos! Total de linhas: {len(df_final)}")
+            
+            # 4. Renderização Web (Ocultando o CLA)
+            df_view = df_final.drop(columns=['CLA'], errors='ignore')
+            st_styled = df_view.style.apply(aplicar_destaques, axis=1).format({'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P.CUSTO': '{:.2f}'}, na_rep="")
+            st.dataframe(st_styled, width='stretch', hide_index=True)
+            
+            # 5. Exportação Excel
+            excel_data = formatar_excel(df_view)
+            st.download_button(
+                label="Download Excel Encomendas", 
+                data=excel_data, 
+                file_name='Sell_Out_GRUPO.xlsx', 
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        else:
+            st.info("Nenhum dado processado ainda. Configure a sidebar e clique em 'Processar Dados'.")
+
+    with tab_redistribuicao:
+        if not st.session_state.df_base_detalhada.empty:
+            st.subheader("⚙️ Configurações de Redistribuição")
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                meses_val = st.slider("Meses mínimos de Validade (Não transferir se caducar antes)", 1, 12, 3)
+            with col_r2:
+                dias_imun = st.slider("Dias de Imunidade para Produto Novo", 0, 180, 90)
+                
+            if st.button("🚀 Gerar Plano de Redistribuição", type="primary", width='stretch'):
+                with st.spinner("A gerar transferências inteligentes..."):
+                    df_base_reorder = st.session_state.df_base_detalhada.copy()
+                    
+                    colunas_totais = list(df_base_reorder.columns)
+                    idx_tuni = colunas_totais.index('T Uni')
+                    if anterior:
+                        indice_colunas = [idx_tuni-2, idx_tuni-3, idx_tuni-4, idx_tuni-5] 
+                    else:
+                        indice_colunas = [idx_tuni-1, idx_tuni-2, idx_tuni-3, idx_tuni-4]
+                        
+                    cols_vendas = [df_base_reorder.columns[i] for i in indice_colunas]
+                    
+                    plano_df = gerar_plano_redistribuicao(
+                        df_base_reorder, 
+                        st.session_state.df_univ, 
+                        meses_val, 
+                        dias_imun, 
+                        cols_vendas, 
+                        [0.4, 0.3, 0.2, 0.1]
+                    )
+                    
+                    if not plano_df.empty:
+                        st.success(f"Plano gerado com sucesso! {len(plano_df)} transferências sugeridas.")
+                        st.dataframe(plano_df, width='stretch', hide_index=True)
+                        
+                        # Output Excel do Plano
+                        output_plan = BytesIO()
+                        plano_df.to_excel(output_plan, index=False)
+                        output_plan.seek(0)
+                        st.download_button(
+                            label="Download Plano de Redistribuição", 
+                            data=output_plan, 
+                            file_name='Plano_Redistribuicao.xlsx', 
+                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        )
+                    else:
+                        st.info("O algoritmo não encontrou nenhuma oportunidade de transferência segura para este portefólio.")
+        else:
+            st.info("Nenhum dado processado ainda. Configure a sidebar e clique em 'Processar Dados'.")
 
 if __name__ == "__main__":
     main()

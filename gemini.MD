@@ -55,6 +55,47 @@ As tabelas são rigorosamente ordenadas de forma ascendente por:
     *   Rutura: Célula da `Proposta` a vermelho.
 *   **Excel:** A coluna `CLA` é removida automaticamente no momento do download.
 
+## 6. Motor de Redistribuição Inteligente de Stock (`stockreorder.py`)
+
+Esta funcionalidade é um sistema de suporte à decisão logística que visa otimizar o capital imobilizado através de transferências entre farmácias da rede.
+
+### A. Fundamentos e Insights de Negócio Implementados
+
+1.  **Custo Marginal de Transporte Zero:**
+    *   **O quê:** Não aplicamos filtros de valor mínimo ou quantidade mínima para gerar uma transferência.
+    *   **Porquê:** Como as rotas de transporte interno já existem e circulam para outros fluxos, aproveitar a capacidade ociosa para mover até uma única unidade de baixo valor é rentável e limpa o inventário.
+    *   **O que evitamos:** Evitamos deixar "restos" de stock parado apenas por terem baixo valor unitário.
+
+2.  **Proteção de Produto Novo (Imunidade DUC):**
+    *   **O quê:** Um produto comprado nos últimos X dias (padrão 90) é imune a ser transferido como "Zombie".
+    *   **Porquê:** Novos produtos precisam de tempo na prateleira para que o mercado local reaja. Remover um produto novo precocemente distorce o teste de portfólio.
+    *   **Dados Sujos:** Se a Data da Última Compra (`DUC`) for nula, o sistema assume que o produto é antigo e retira-lhe a imunidade.
+
+3.  **Trava de Segurança da Última Unidade (Failsafe):**
+    *   **O quê:** Se uma farmácia teve pelo menos uma venda nos últimos meses, o sistema nunca lhe retira a última unidade (`Stock - 1`).
+    *   **Porquê:** Evitamos "secar" completamente uma loja que ainda tem procura residual, mantendo a presença mínima no mercado local.
+    *   **Exceção:** Só evacuamos a prateleira a 100% se o produto for um **Zombie Absoluto** (0 vendas no período avaliado).
+
+4.  **Histerese de Cobertura (Fase 1):**
+    *   **O quê:** Tiramos de quem tem `> 2 meses` para dar a quem tem `< 1 mês`. O destino só é enchido até ao limite de `2 meses`.
+    *   **Porquê:** Evitamos o efeito "Ping-Pong". Se enchêssemos o destino até ao mesmo nível da origem, no mês seguinte o sistema poderia sugerir a devolução do produto.
+
+5.  **Evacuação Preditiva para Silos Fortes (Fase 2):**
+    *   **O quê:** Atiramos Zombies (0 vendas) para a farmácia com a maior Média de Vendas da rede, **mesmo que ela já tenha stock suficiente**.
+    *   **Porquê:** É melhor sobrelotar uma loja que vende bem do que deixar o produto morrer numa loja que não vende nada. O produto tem maior probabilidade estatística de ser escoado antes de caducar.
+    *   **Limite de Travagem:** O destino só aceita o Zombie se a sua Média permitir vender o stock atual + o Zombie **antes da Data de Validade (`DTVAL`)** do produto.
+
+### B. O Motor de 2 Fases e Stock Virtual
+O sistema processa a lógica de forma sequencial para garantir integridade:
+*   **Fase 1 (Apagar Fogos):** Resolve riscos imediatos de rutura usando excessos de cobertura.
+*   **Cálculo de Stock Virtual:** Após a Fase 1, o sistema "simula" que as unidades já foram movidas.
+*   **Fase 2 (Otimizar Mortos):** Atua sobre o que sobrou após a Fase 1, focando-se em eliminar Zombies.
+
+### C. Colunas de Confiança (Validação Humana)
+Para que o utilizador confie no sistema "cego", o output inclui métricas de fundamentação:
+*   **`Motivo Saída` / `Motivo Entrada`:** Explica textualmente porque é que a ação está a ser sugerida.
+*   **`Tempo Escoamento Previsto`:** Uma prova matemática que demonstra que a loja de destino consegue vender o produto antes de ele caducar.
+
 ## Próximos Passos
 1.  Manter a estabilidade das fórmulas matemáticas.
 2.  Garantir que novos mapeamentos em `localizacoes.json` refletem instantaneamente em todos os merges.
