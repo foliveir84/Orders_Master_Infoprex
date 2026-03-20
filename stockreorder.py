@@ -38,15 +38,31 @@ def calcular_estado_stock(df, meses_validade, dias_imunidade, cols_meses_vendas,
     # 4. Classificações Táticas
     df_analise['Is_Zombie'] = (df_analise['STOCK'] > 0) & (df_analise['Media'] == 0) & (~df_analise['Is_Novo'])
     
-    # Teve alguma venda nos meses avaliados? (Para o Failsafe)
-    df_analise['Vendas_Totais_Recentes'] = df_analise[cols_meses_vendas].sum(axis=1)
+    # Teve alguma venda nos meses avaliados? (Para o Failsafe contra devoluções)
+    df_analise['Teve_Vendas_Positivas'] = (df_analise[cols_meses_vendas] > 0).any(axis=1)
+    
+    # Validação de "Forte Escoamento" (Constância ou Recência estrita nos últimos 2 meses da janela)
+    vendas_positivas_por_mes = (df_analise[cols_meses_vendas] > 0).astype(int)
+    df_analise['Meses_Com_Vendas'] = vendas_positivas_por_mes.sum(axis=1)
+    
+    # cols_meses_vendas vem do app.py já ordenado do mais recente para o mais antigo relativo ao toggle
+    mes_atual = cols_meses_vendas[0]
+    mes_anterior = cols_meses_vendas[1]
+    
+    vendeu_mes_atual = df_analise[mes_atual] > 0
+    vendeu_mes_anterior = df_analise[mes_anterior] > 0
+    multiplos_meses = df_analise['Meses_Com_Vendas'] >= 2
+    
+    df_analise['Destino_Forte'] = (df_analise['Media'] > 0) & (vendeu_mes_atual | (vendeu_mes_anterior & multiplos_meses))
 
     # ==========================================
     # PREPARAÇÃO FASE 1: Apagar Fogos
     # ==========================================
-    # Necessidade: Destino precisa se Cobertura < 1. Objetivo = Encher até 2 meses.
+    # Necessidade: Destino precisa se Cobertura < 1.2 (Subimos de 1.0 para maior segurança). 
+    # Objetivo = Encher até 2 meses.
+    # NOVIDADE: Exigir 'Destino_Forte' para Fase 1 também, para evitar alimentar picos isolados (falsas ruturas).
     df_analise['Qtd_Necessaria_F1'] = np.where(
-        (df_analise['Meses_Stock'] < 1.0) & (df_analise['Media'] > 0),
+        (df_analise['Meses_Stock'] < 1.2) & df_analise['Destino_Forte'],
         np.ceil((df_analise['Media'] * 2.0) - df_analise['STOCK']),
         0
     )
@@ -58,12 +74,13 @@ def calcular_estado_stock(df, meses_validade, dias_imunidade, cols_meses_vendas,
     
     # Excesso Líquido (Aplicando Proteções)
     # 1. Não cede se Validade Curta
-    # 2. Failsafe: Se teve vendas, deixa pelo menos 1
-    limite_failsafe = np.where(df_analise['Vendas_Totais_Recentes'] > 0, df_analise['STOCK'] - 1, df_analise['STOCK'])
+    # 2. Failsafe: Se teve vendas positivas, deixa pelo menos 1
+    limite_failsafe = np.where(df_analise['Teve_Vendas_Positivas'], df_analise['STOCK'] - 1, df_analise['STOCK'])
     excesso_liquido = np.minimum(excesso_bruto, limite_failsafe)
     
+    # BUG 1 CORRIGIDO: Zombies podem e devem ceder stock na Fase 1
     df_analise['Qtd_Excesso_F1'] = np.where(
-        ~df_analise['Validade_Curta'] & (~df_analise['Is_Zombie']), 
+        ~df_analise['Validade_Curta'], 
         excesso_liquido, 
         0
     )
@@ -83,11 +100,22 @@ def alocar_transferencias(origens_dict, destinos_dict, key_qty_origem, key_qty_d
             excess_qty = origem[key_qty_origem]
             if excess_qty <= 0: continue
 
-            # O destino é limitado na Fase 2 pela sua capacidade de escoar antes de caducar.
-            # O cálculo já foi feito e passado no 'key_qty_destino'.
             transfer_qty = int(min(need_qty, excess_qty))
 
+            # BUG 2 CORRIGIDO: O destino é limitado na Fase 2 pela sua capacidade de escoar antes da origem caducar.
+            if fase_nome == 'Fase 2':
+                meses_validade_origem = origem.get('Meses_Para_Caducar', 12)
+                if pd.isna(meses_validade_origem): meses_validade_origem = 12
+                meses_validade_origem = min(meses_validade_origem, 12)
+                
+                capacidade_real = int(np.floor(destino['Media'] * meses_validade_origem) - destino['STOCK'])
+                if capacidade_real <= 0: continue
+                transfer_qty = min(transfer_qty, capacidade_real)
+
             if transfer_qty > 0:
+                # BUG 4 CORRIGIDO: Atualizar stock destino em tempo real para cálculo preciso e encadeamento
+                destino['STOCK'] += transfer_qty
+                
                 sugestoes_geradas.append({
                     'CÓDIGO': destino['CÓDIGO'],
                     'DESIGNAÇÃO': destino.get('DESIGNAÇÃO', ''),
@@ -99,7 +127,7 @@ def alocar_transferencias(origens_dict, destinos_dict, key_qty_origem, key_qty_d
                     'Destino': destino['LOCALIZACAO'],
                     'Motivo Entrada': motivo_entrada(destino),
                     'Stock_Destino': int(destino['STOCK']),
-                    'Tempo_Escoamento_Previsto': f"{round((destino['STOCK'] + transfer_qty) / destino['Media'], 1)} meses" if destino['Media'] > 0 else "N/A"
+                    'Tempo_Escoamento_Previsto': f"{round(destino['STOCK'] / destino['Media'], 1)} meses" if destino['Media'] > 0 else "N/A"
                 })
                 
                 need_qty -= transfer_qty
@@ -113,7 +141,7 @@ def executar_fase_1(df_analise):
     grupos_produto = df_analise.groupby('CÓDIGO')
     
     for codigo, group in grupos_produto:
-        origens = group[group['Qtd_Excesso_F1'] > 0].to_dict('records')
+        origens = group[group['Qtd_Excesso_F1'] > 0].sort_values(by=['Meses_Stock'], ascending=[False]).to_dict('records')
         destinos = group[group['Qtd_Necessaria_F1'] > 0].sort_values(by=['Meses_Stock'], ascending=[True]).to_dict('records')
 
         if not origens or not destinos: continue
@@ -163,25 +191,20 @@ def executar_fase_2(df_apos_fase_1):
         0
     ).astype(int)
 
-    # Destinos: As Lojas com Média > 0.
-    # Necessidade F2 (Capacidade Preditiva de Escoamento):
-    # Quantas consegue absorver antes da sua própria validade (limitada a 12 meses máximo para sanidade)
-    meses_para_escoar = np.minimum(df_apos_fase_1['Meses_Para_Caducar'].fillna(12), 12)
-    capacidade_maxima = np.floor(df_apos_fase_1['Media'] * meses_para_escoar)
-    
-    # A necessidade F2 é o que ele aguenta vender até caducar MENOS o stock que ele já tem.
+    # Destinos: Lojas com Destino_Forte (Media > 0 e com consistência/recência)
+    # A capacidade será calculada dinamicamente no alocar_transferencias baseada na validade da Origem
     df_apos_fase_1['Qtd_Necessaria_F2'] = np.where(
-        df_apos_fase_1['Media'] > 0,
-        capacidade_maxima - df_apos_fase_1['STOCK'],
+        df_apos_fase_1['Destino_Forte'],
+        9999,
         0
     )
-    df_apos_fase_1['Qtd_Necessaria_F2'] = df_apos_fase_1['Qtd_Necessaria_F2'].clip(lower=0).astype(int)
 
     sugestoes_fase_2 = []
     grupos_produto = df_apos_fase_1.groupby('CÓDIGO')
 
     for codigo, group in grupos_produto:
-        origens = group[group['Qtd_Excesso_F2'] > 0].to_dict('records')
+        # BUG 3 CORRIGIDO: Ordenação descendente nas origens pelo STOCK (mais zombies libertam primeiro)
+        origens = group[group['Qtd_Excesso_F2'] > 0].sort_values(by=['STOCK'], ascending=[False]).to_dict('records')
         # Priorizar destinos com maior volume de vendas
         destinos = group[group['Qtd_Necessaria_F2'] > 0].sort_values(by=['Media'], ascending=[False]).to_dict('records')
 
@@ -205,6 +228,9 @@ def gerar_plano_redistribuicao(df_input, df_univ, meses_validade, dias_imunidade
         return pd.DataFrame()
 
     df_base = df_input.copy()
+    
+    # Remover linha totalizadora que não é uma localização real
+    df_base = df_base[~df_base['LOCALIZACAO'].str.contains('Zgrupo', case=False, na=False)]
     
     # Se não tiver a designação universal, fazemos merge
     if 'DESIGNAÇÃO' not in df_base.columns:

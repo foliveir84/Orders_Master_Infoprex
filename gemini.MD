@@ -71,30 +71,35 @@ Esta funcionalidade é um sistema de suporte à decisão logística que visa oti
     *   **Porquê:** Novos produtos precisam de tempo na prateleira para que o mercado local reaja. Remover um produto novo precocemente distorce o teste de portfólio.
     *   **Dados Sujos:** Se a Data da Última Compra (`DUC`) for nula, o sistema assume que o produto é antigo e retira-lhe a imunidade.
 
-3.  **Trava de Segurança da Última Unidade (Failsafe):**
-    *   **O quê:** Se uma farmácia teve pelo menos uma venda nos últimos meses, o sistema nunca lhe retira a última unidade (`Stock - 1`).
+3.  **Trava de Segurança da Última Unidade (Failsafe Anti-Devoluções):**
+    *   **O quê:** Se uma farmácia teve pelo menos um mês com vendas positivas, o sistema nunca lhe retira a última unidade (`Stock - 1`). É avaliado com `any(>0)` e não por soma, para evitar que devoluções (-1) anulem o histórico de vendas (1).
     *   **Porquê:** Evitamos "secar" completamente uma loja que ainda tem procura residual, mantendo a presença mínima no mercado local.
     *   **Exceção:** Só evacuamos a prateleira a 100% se o produto for um **Zombie Absoluto** (0 vendas no período avaliado).
 
-4.  **Histerese de Cobertura (Fase 1):**
-    *   **O quê:** Tiramos de quem tem `> 2 meses` para dar a quem tem `< 1 mês`. O destino só é enchido até ao limite de `2 meses`.
+4.  **Histerese de Cobertura e Rede de Segurança (Fase 1):**
+    *   **O quê:** Tiramos de quem tem `> 2 meses` para dar a quem tem `< 1.2 meses` (Margem de segurança alargada de 1.0 para 1.2 para intervir antes da rutura absoluta). O destino só é enchido até ao limite de `2 meses`.
+    *   **Zombies ao Resgate:** Produtos "Zombies" noutras lojas são ativamente utilizados nesta fase para apagar fogos reais.
     *   **Porquê:** Evitamos o efeito "Ping-Pong". Se enchêssemos o destino até ao mesmo nível da origem, no mês seguinte o sistema poderia sugerir a devolução do produto.
 
-5.  **Evacuação Preditiva para Silos Fortes (Fase 2):**
-    *   **O quê:** Atiramos Zombies (0 vendas) para a farmácia com a maior Média de Vendas da rede, **mesmo que ela já tenha stock suficiente**.
-    *   **Porquê:** É melhor sobrelotar uma loja que vende bem do que deixar o produto morrer numa loja que não vende nada. O produto tem maior probabilidade estatística de ser escoado antes de caducar.
-    *   **Limite de Travagem:** O destino só aceita o Zombie se a sua Média permitir vender o stock atual + o Zombie **antes da Data de Validade (`DTVAL`)** do produto.
+5.  **Evacuação Preditiva com Validação de Tração Recente (`Destino_Forte`) (Fase 2):**
+    *   **O quê:** Atiramos Zombies (0 vendas) para a farmácia com a maior Média de Vendas da rede, **mas apenas se provar tração recente**. Não basta ter `Média > 0` (que pode ser inflacionada por um pico antigo de sazonalidade).
+    *   **Tração Recente Exigida:** A loja tem obrigatoriamente de ter vendido no **mês mais recente**, ou, falhando isso, ter vendido no **mês anterior e possuir pelo menos 2 meses com vendas** no quadrimestre.
+    *   **Limite de Travagem:** O destino só aceita o Zombie se a sua Média permitir vender o stock atual + o Zombie **antes da Data de Validade da Origem** (quem envia as caixas).
+
+6.  **Filtro de Agrupadores Fictícios:**
+    *   **O quê:** A linha `Zgrupo_Total` é automaticamente expurgada do motor logístico.
+    *   **Porquê:** Previne sugestões de transferência em que o remetente ou destino seja o totalizador do grupo e não uma loja física.
 
 ### B. O Motor de 2 Fases e Stock Virtual
 O sistema processa a lógica de forma sequencial para garantir integridade:
-*   **Fase 1 (Apagar Fogos):** Resolve riscos imediatos de rutura usando excessos de cobertura.
-*   **Cálculo de Stock Virtual:** Após a Fase 1, o sistema "simula" que as unidades já foram movidas.
-*   **Fase 2 (Otimizar Mortos):** Atua sobre o que sobrou após a Fase 1, focando-se em eliminar Zombies.
+*   **Fase 1 (Apagar Fogos):** Resolve riscos imediatos de rutura (Cobertura < 1.2) usando excessos de cobertura de outras lojas (incluindo Zombies).
+*   **Cálculo de Stock Virtual:** Após a Fase 1, o sistema "simula" que as unidades já foram movidas. A capacidade da loja (`STOCK`) é atualizada iterativamente dentro do próprio ciclo de transferências.
+*   **Fase 2 (Otimizar Mortos):** Atua sobre o que sobrou após a Fase 1. As origens são **ordenadas de forma descendente** pelo stock parado, evacuando primeiro as lojas mais afogadas em zombies para lojas com `Destino_Forte` comprovado.
 
 ### C. Colunas de Confiança (Validação Humana)
 Para que o utilizador confie no sistema "cego", o output inclui métricas de fundamentação:
 *   **`Motivo Saída` / `Motivo Entrada`:** Explica textualmente porque é que a ação está a ser sugerida.
-*   **`Tempo Escoamento Previsto`:** Uma prova matemática que demonstra que a loja de destino consegue vender o produto antes de ele caducar.
+*   **`Tempo Escoamento Previsto`:** Uma prova matemática (calculada com o stock destino atualizado em tempo real) que demonstra que a loja de destino consegue vender o lote acumulado antes de ele caducar.
 
 ## Próximos Passos
 1.  Manter a estabilidade das fórmulas matemáticas.
