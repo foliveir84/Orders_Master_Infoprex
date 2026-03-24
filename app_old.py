@@ -180,43 +180,6 @@ def carregar_laboratorios(mtime):
 
 
 @st.cache_data(show_spinner=False)
-def processar_ficheiros_marcas(ficheiros):
-    """
-    Lê ficheiros CSV do Infoprex Simples e cria a tabela de marcas.
-    """
-    if not ficheiros:
-        return pd.DataFrame(columns=['COD', 'MARCA'])
-    dataframes = []
-    colunas_a_ler = ['COD', 'MARCA']
-    for ficheiro in ficheiros:
-        try:
-            df_temp = pd.read_csv(
-                ficheiro, 
-                sep=';', 
-                usecols=colunas_a_ler,
-                on_bad_lines='skip',
-                dtype={'COD': str, 'MARCA': str}
-            )
-            dataframes.append(df_temp)
-        except Exception as e:
-            st.warning(f"Erro ao ler {ficheiro.name}: {e}")
-            
-    if not dataframes:
-        return pd.DataFrame(columns=['COD', 'MARCA'])
-        
-    df_final = pd.concat(dataframes, ignore_index=True)
-    df_final['MARCA'] = df_final['MARCA'].astype(str).str.strip()
-    df_final.replace(['', 'nan', 'NaN', 'None'], pd.NA, inplace=True)
-    df_final.dropna(subset=['MARCA'], inplace=True)
-    df_final['COD'] = pd.to_numeric(df_final['COD'], errors='coerce')
-    df_final.dropna(subset=['COD'], inplace=True)
-    df_final['COD'] = df_final['COD'].astype(int)
-    df_final.drop_duplicates(subset=['COD'], keep='first', inplace=True)
-    df_final.reset_index(drop=True, inplace=True)
-    return df_final
-
-
-@st.cache_data(show_spinner=False)
 def processar_ficheiros_upload(ficheiros, labs_selecionados, codigos_txt, _dicionario_labs, _dict_locs):
     """
     Processa todos os ficheiros carregados, aplicando os filtros selecionados,
@@ -662,16 +625,6 @@ def render_sidebar():
         type=['txt'],
         key="uploader_infoprex"
     )
-    
-    st.sidebar.subheader("4. Base de Marcas (Opcional)")
-    st.sidebar.markdown(
-        "<small>Carregue os ficheiros Infoprex_SIMPLES.csv para ativar o filtro por marcas.</small>", unsafe_allow_html=True)
-    ficheiros_marcas = st.sidebar.file_uploader(
-        "Ficheiros Infoprex Simples (.csv)",
-        accept_multiple_files=True,
-        type=['csv'],
-        key="uploader_marcas"
-    )
 
     processar = st.sidebar.button(
         "🚀 Processar Dados", width='stretch', type="primary")
@@ -681,7 +634,6 @@ def render_sidebar():
         'labs_selecionados': labs_selecionados,
         'dicionario_labs': dicionario_labs,
         'ficheiros_infoprex': ficheiros_infoprex,
-        'ficheiros_marcas': ficheiros_marcas,
         'processar': processar
     }
 
@@ -775,20 +727,6 @@ def main():
         else:
             st.info("Nenhum laboratório selecionado no filtro.")
 
-    # Filtro Dinâmico de Marcas
-    marcas_selecionadas = []
-    if 'df_univ' in st.session_state and not st.session_state.df_univ.empty and 'MARCA' in st.session_state.df_univ.columns:
-        # Extrair apenas marcas válidas (não nulas)
-        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna().unique().tolist()
-        marcas_disponiveis = sorted([str(m) for m in marcas_disponiveis if str(m).strip()])
-        if marcas_disponiveis:
-            marcas_selecionadas = st.multiselect(
-                "🏷️ Filtrar por Marca:",
-                options=marcas_disponiveis,
-                default=None,
-                placeholder="Selecione uma ou mais marcas para filtrar os resultados abaixo..."
-            )
-
     st.divider()
 
     # --- Controlo Global (Aplicado a ambos os módulos) ---
@@ -827,14 +765,6 @@ def main():
                 else:
                     # 2. Criar a Tabela Master Universal de Nomes
                     df_univ = criar_tabela_dimensao(df_base)
-                    
-                    # Processar as marcas e juntar à tabela dimensão (df_univ)
-                    df_marcas = processar_ficheiros_marcas(opcoes_sidebar['ficheiros_marcas'])
-                    if not df_marcas.empty:
-                        df_univ = pd.merge(df_univ, df_marcas, left_on='CÓDIGO', right_on='COD', how='left')
-                        df_univ.drop(columns=['COD'], inplace=True)
-                    else:
-                        df_univ['MARCA'] = pd.NA
 
                     # 3. Remover a DESIGNAÇÃO da base antes de agrupar para evitar conflitos textuais
                     df_base = df_base.drop(columns=['DESIGNAÇÃO'])
@@ -898,14 +828,6 @@ def main():
             else:
                 df_selecionada = st.session_state.df_base_agrupada.copy()
 
-            # Aplicar filtro dinâmico de Marcas (se aplicável)
-            if marcas_selecionadas and 'MARCA' in df_selecionada.columns:
-                df_selecionada = df_selecionada[df_selecionada['MARCA'].isin(marcas_selecionadas)].copy()
-                
-            # Remover a coluna MARCA para proteger os cálculos de posição e ocultá-la do UI/Excel
-            if 'MARCA' in df_selecionada.columns:
-                df_selecionada = df_selecionada.drop(columns=['MARCA'])
-
             # 2. Calcular os índices para a média ponderada
             colunas_totais = list(df_selecionada.columns)
             idx_tuni = colunas_totais.index('T Uni')
@@ -967,14 +889,6 @@ def main():
             if st.button("🚀 Gerar Plano de Redistribuição", type="primary", width='stretch'):
                 with st.spinner("A gerar transferências inteligentes..."):
                     df_base_reorder = st.session_state.df_base_detalhada.copy()
-
-                    # Aplicar filtro dinâmico de Marcas (se aplicável)
-                    if marcas_selecionadas and 'MARCA' in df_base_reorder.columns:
-                        df_base_reorder = df_base_reorder[df_base_reorder['MARCA'].isin(marcas_selecionadas)].copy()
-                        
-                    # Remover a coluna MARCA
-                    if 'MARCA' in df_base_reorder.columns:
-                        df_base_reorder = df_base_reorder.drop(columns=['MARCA'])
 
                     colunas_totais = list(df_base_reorder.columns)
                     idx_tuni = colunas_totais.index('T Uni')
