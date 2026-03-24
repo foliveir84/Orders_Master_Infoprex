@@ -766,41 +766,6 @@ def main():
     if 'last_txt_name' not in st.session_state:
         st.session_state.last_txt_name = None
 
-    # 1. Renderiza a Sidebar e recolhe inputs
-    opcoes_sidebar = render_sidebar()
-
-    # Expander para ver os códigos dos Laboratórios Selecionados
-    with st.expander("🔬 Ver Códigos (CLA) dos Laboratórios Selecionados"):
-        if opcoes_sidebar['labs_selecionados']:
-            st.write(
-                "Os seguintes códigos estão a ser utilizados para filtrar as vendas:")
-            for lab in opcoes_sidebar['labs_selecionados']:
-                codigos_lab = opcoes_sidebar['dicionario_labs'].get(lab, [])
-                st.markdown(f"- **{lab}:** `{', '.join(codigos_lab)}`")
-        else:
-            st.info("Nenhum laboratório selecionado no filtro.")
-
-    # Filtro Dinâmico de Marcas
-    marcas_selecionadas = []
-    if 'df_univ' in st.session_state and not st.session_state.df_univ.empty and 'MARCA' in st.session_state.df_univ.columns:
-        # Extrair apenas marcas válidas (não nulas)
-        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna(
-        ).unique().tolist()
-        marcas_disponiveis = sorted(
-            [str(m) for m in marcas_disponiveis if str(m).strip()])
-        if marcas_disponiveis:
-            marcas_selecionadas = st.multiselect(
-                "🏷️ Filtrar por Marca:",
-                options=marcas_disponiveis,
-                default=marcas_disponiveis,
-                placeholder="Selecione uma ou mais marcas para filtrar os resultados abaixo..."
-            )
-
-    st.divider()
-
-    # --- Controlo Global (Aplicado a ambos os módulos) ---
-    anterior = st.toggle("Média Ponderada com Base no mês ANTERIOR?")
-
     # Inicializa estado na sessão para manter as dataframes
     if 'df_base_agrupada' not in st.session_state:
         st.session_state.df_base_agrupada = pd.DataFrame()
@@ -808,8 +773,9 @@ def main():
         st.session_state.df_univ = pd.DataFrame()
         st.session_state.erros_ficheiros = []
         st.session_state.codigos_invalidos = []
-        st.session_state.last_labs = None
-        st.session_state.last_txt_name = None
+
+    # 1. Renderiza a Sidebar e recolhe inputs
+    opcoes_sidebar = render_sidebar()
 
     # ==============================================================
     # PASSO 1: Agregação Base Pesada (Ao clicar no botão)
@@ -870,6 +836,44 @@ def main():
         else:
             st.sidebar.error(
                 "Por favor, carregue pelo menos um ficheiro Infoprex.")
+
+    # Expander para ver os códigos dos Laboratórios Selecionados
+    with st.expander("🔬 Ver Códigos (CLA) dos Laboratórios Selecionados"):
+        if opcoes_sidebar['labs_selecionados']:
+            st.write(
+                "Os seguintes códigos estão a ser utilizados para filtrar as vendas:")
+            for lab in opcoes_sidebar['labs_selecionados']:
+                codigos_lab = opcoes_sidebar['dicionario_labs'].get(lab, [])
+                st.markdown(f"- **{lab}:** `{', '.join(codigos_lab)}`")
+        else:
+            st.info("Nenhum laboratório selecionado no filtro.")
+
+    # Filtro Dinâmico de Marcas
+    marcas_selecionadas = []
+    if 'df_univ' in st.session_state and not st.session_state.df_univ.empty and 'MARCA' in st.session_state.df_univ.columns:
+        # Extrair apenas marcas válidas (não nulas)
+        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna(
+        ).unique().tolist()
+        marcas_disponiveis = sorted(
+            [str(m) for m in marcas_disponiveis if str(m).strip()])
+        if marcas_disponiveis:
+            # We add a unique key based on the currently selected lab/txt to force the component to re-initialize safely if options change drastically.
+            multiselect_key = "marcas_multiselect"
+            if st.session_state.last_labs:
+                multiselect_key += "_" + "_".join(st.session_state.last_labs)
+            
+            marcas_selecionadas = st.multiselect(
+                "🏷️ Filtrar por Marca:",
+                options=marcas_disponiveis,
+                default=marcas_disponiveis,
+                placeholder="Selecione uma ou mais marcas para filtrar os resultados abaixo...",
+                key=multiselect_key
+            )
+
+    st.divider()
+
+    # --- Controlo Global (Aplicado a ambos os módulos) ---
+    anterior = st.toggle("Média Ponderada com Base no mês ANTERIOR?")
 
     current_txt_name = opcoes_sidebar['ficheiro_codigos'].name if opcoes_sidebar['ficheiro_codigos'] else None
     if not st.session_state.df_base_agrupada.empty and ((opcoes_sidebar['labs_selecionados'] != st.session_state.last_labs) or (current_txt_name != st.session_state.last_txt_name)):

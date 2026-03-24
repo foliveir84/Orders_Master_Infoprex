@@ -59,6 +59,7 @@ As tabelas são rigorosamente ordenadas de forma ascendente por:
     *   Linha de Total: Preto com letra branca.
     *   Não Comprar: Roxo claro até à coluna `T Uni`.
     *   Rutura: Célula da `Proposta` a vermelho.
+*   **Performance (Pandas Styler):** O limite de elementos a processar pelo motor de CSS do Pandas foi elevado (`styler.render.max_elements`) para evitar quebras em ficheiros massivos.
 *   **Excel:** As colunas temporárias ou auxiliares (como `CLA` ou `MARCA`) são expurgadas antes do download.
 
 ## 6. Motor de Redistribuição Inteligente de Stock (`stockreorder.py`)
