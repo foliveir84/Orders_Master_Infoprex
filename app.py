@@ -26,6 +26,9 @@ st.set_page_config(
 
 pd.options.display.float_format = '{:.2f}'.format
 
+# Aumentar o limite de elementos para renderização do Styler, evitando cortes em grandes dataframes
+pd.set_option("styler.render.max_elements", 1000000)
+
 # ==========================================
 # Funções Auxiliares de Mapeamento
 # ==========================================
@@ -191,8 +194,8 @@ def processar_ficheiros_marcas(ficheiros):
     for ficheiro in ficheiros:
         try:
             df_temp = pd.read_csv(
-                ficheiro, 
-                sep=';', 
+                ficheiro,
+                sep=';',
                 usecols=colunas_a_ler,
                 on_bad_lines='skip',
                 dtype={'COD': str, 'MARCA': str}
@@ -200,10 +203,10 @@ def processar_ficheiros_marcas(ficheiros):
             dataframes.append(df_temp)
         except Exception as e:
             st.warning(f"Erro ao ler {ficheiro.name}: {e}")
-            
+
     if not dataframes:
         return pd.DataFrame(columns=['COD', 'MARCA'])
-        
+
     df_final = pd.concat(dataframes, ignore_index=True)
     df_final['MARCA'] = df_final['MARCA'].astype(str).str.strip()
     df_final.replace(['', 'nan', 'NaN', 'None'], pd.NA, inplace=True)
@@ -545,7 +548,8 @@ def aplicar_destaques(linha):
                     mes_val = int(mes_ano[0])
                     ano_val = int(mes_ano[1])
                     hoje = datetime.now()
-                    diff_meses = (ano_val - hoje.year) * 12 + (mes_val - hoje.month)
+                    diff_meses = (ano_val - hoje.year) * \
+                        12 + (mes_val - hoje.month)
                     if diff_meses <= 4:
                         idx_dtval = linha.index.get_loc('DTVAL')
                         estilos[idx_dtval] = 'background-color: orange; color: black; font-weight: bold'
@@ -611,7 +615,8 @@ def formatar_excel(dataframe_final):
                         mes_val = int(mes_ano[0])
                         ano_val = int(mes_ano[1])
                         hoje = datetime.now()
-                        diff_meses = (ano_val - hoje.year) * 12 + (mes_val - hoje.month)
+                        diff_meses = (ano_val - hoje.year) * \
+                            12 + (mes_val - hoje.month)
                         if diff_meses <= 4:
                             cell_dtval = ws.cell(row=row_idx, column=col_dtval)
                             cell_dtval.fill = fill_laranja
@@ -662,7 +667,7 @@ def render_sidebar():
         type=['txt'],
         key="uploader_infoprex"
     )
-    
+
     st.sidebar.subheader("4. Base de Marcas (Opcional)")
     st.sidebar.markdown(
         "<small>Carregue os ficheiros Infoprex_SIMPLES.csv para ativar o filtro por marcas.</small>", unsafe_allow_html=True)
@@ -779,8 +784,10 @@ def main():
     marcas_selecionadas = []
     if 'df_univ' in st.session_state and not st.session_state.df_univ.empty and 'MARCA' in st.session_state.df_univ.columns:
         # Extrair apenas marcas válidas (não nulas)
-        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna().unique().tolist()
-        marcas_disponiveis = sorted([str(m) for m in marcas_disponiveis if str(m).strip()])
+        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna(
+        ).unique().tolist()
+        marcas_disponiveis = sorted(
+            [str(m) for m in marcas_disponiveis if str(m).strip()])
         if marcas_disponiveis:
             marcas_selecionadas = st.multiselect(
                 "🏷️ Filtrar por Marca:",
@@ -827,11 +834,13 @@ def main():
                 else:
                     # 2. Criar a Tabela Master Universal de Nomes
                     df_univ = criar_tabela_dimensao(df_base)
-                    
+
                     # Processar as marcas e juntar à tabela dimensão (df_univ)
-                    df_marcas = processar_ficheiros_marcas(opcoes_sidebar['ficheiros_marcas'])
+                    df_marcas = processar_ficheiros_marcas(
+                        opcoes_sidebar['ficheiros_marcas'])
                     if not df_marcas.empty:
-                        df_univ = pd.merge(df_univ, df_marcas, left_on='CÓDIGO', right_on='COD', how='left')
+                        df_univ = pd.merge(
+                            df_univ, df_marcas, left_on='CÓDIGO', right_on='COD', how='left')
                         df_univ.drop(columns=['COD'], inplace=True)
                     else:
                         df_univ['MARCA'] = pd.NA
@@ -900,8 +909,9 @@ def main():
 
             # Aplicar filtro dinâmico de Marcas (se aplicável)
             if marcas_selecionadas and 'MARCA' in df_selecionada.columns:
-                df_selecionada = df_selecionada[df_selecionada['MARCA'].isin(marcas_selecionadas)].copy()
-                
+                df_selecionada = df_selecionada[df_selecionada['MARCA'].isin(
+                    marcas_selecionadas)].copy()
+
             # Remover a coluna MARCA para proteger os cálculos de posição e ocultá-la do UI/Excel
             if 'MARCA' in df_selecionada.columns:
                 df_selecionada = df_selecionada.drop(columns=['MARCA'])
@@ -970,11 +980,13 @@ def main():
 
                     # Aplicar filtro dinâmico de Marcas (se aplicável)
                     if marcas_selecionadas and 'MARCA' in df_base_reorder.columns:
-                        df_base_reorder = df_base_reorder[df_base_reorder['MARCA'].isin(marcas_selecionadas)].copy()
-                        
+                        df_base_reorder = df_base_reorder[df_base_reorder['MARCA'].isin(
+                            marcas_selecionadas)].copy()
+
                     # Remover a coluna MARCA
                     if 'MARCA' in df_base_reorder.columns:
-                        df_base_reorder = df_base_reorder.drop(columns=['MARCA'])
+                        df_base_reorder = df_base_reorder.drop(
+                            columns=['MARCA'])
 
                     colunas_totais = list(df_base_reorder.columns)
                     idx_tuni = colunas_totais.index('T Uni')

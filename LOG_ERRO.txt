@@ -1,0 +1,290 @@
+
+[     UTC     ] Logs for ordersmasterv3.streamlit.app/
+────────────────────────────────────────────────────────────────────────────────────────
+[14:29:28] 🚀 Starting up repository: 'orders_master_infoprex', branch: 'main', main module: 'app.py'
+[14:29:28] 🐙 Cloning repository...
+[14:29:30] 🐙 Cloning into '/mount/src/orders_master_infoprex'...
+
+[14:29:30] 🐙 Cloned repository!
+[14:29:30] 🐙 Pulling code changes from Github...
+[14:29:32] 📦 Processing dependencies...
+
+──────────────────────────────────────── uv ───────────────────────────────────────────
+
+Using uv pip install.
+Using Python 3.14.3 environment at /home/adminuser/venv
+Resolved 40 packages in 368ms
+Prepared 40 packages in 1.56s
+Installed 40 packages in 99ms
+ + altair==6.0.0
+ + attrs==26.1.0
+ + blinker==1.9.0
+ + cachetools==7.0.5
+ + certifi==2026.2.25
+ + charset-normalizer==3.4.6
+ + click==8.3.1
+ + et-xmlfile==2.0.0
+ + gitdb==4.0.12
+ +[2026-03-24 14:29:34.468362]  gitpython==3.1.46
+ + idna==3.11
+ + jinja2==3.1.6
+ + jsonschema==4.26.0
+ [2026-03-24 14:29:34.468571] + jsonschema-specifications==2025.9.1
+ + markupsafe==3.0.3
+ + narwhals==2.18.0
+ + numpy==2.4.3
+ + openpyxl==3.1.5
+ + packaging==26.0
+ + [2026-03-24 14:29:34.468773] pandas==2.3.3
+ + pillow==12.1.1
+ + protobuf==6.33.6
+ + pyarrow==23.0.1
+ + pydeck==0.9.1
+ + python-dateutil==[2026-03-24 14:29:34.468906] 2.9.0.post0
+ + python-dotenv==1.2.2
+ + pytz==2026.1.post1
+ + referencing==0.37.0
+ + requests[2026-03-24 14:29:34.469027] ==2.32.5
+ + rpds-py==0.30.0
+ + six==1.17.0
+ + smmap==5.0.3
+ + streamlit==1.55.0
+ + tenacity==[2026-03-24 14:29:34.469137] 9.1.4
+ + toml==0.10.2
+ + tornado==6.5.5
+ + typing-extensions==4.15.0
+ + tzdata==2025.3
+ +[2026-03-24 14:29:34.469310]  urllib3==2.6.3
+ + watchdog==6.0.0
+Checking if Streamlit is installed
+Found Streamlit version 1.55.0 in the environment
+Installing rich for an improved exception logging
+Using uv pip install.
+Using Python 3.14.3 environment at /home/adminuser/venv
+Resolved 4 packages in 216ms
+Prepared 4 packages in 140ms
+Installed 4 packages in 13ms
+ + markdown-it-py[2026-03-24 14:29:36.419562] ==4.0.0
+ + mdurl==0.1.2
+ + pygments==2.19.2
+ + rich==14.3.3
+
+────────────────────────────────────────────────────────────────────────────────────────
+
+[14:29:36] 🐍 Python dependencies were installed from /mount/src/orders_master_infoprex/requirements.txt using uv.
+Check if streamlit is installed
+Streamlit is already installed
+[14:29:38] 📦 Processed dependencies!
+
+
+
+[14:56:13] 🐙 Pulling code changes from Github...
+[14:56:14] 📦 Processing dependencies...
+[14:56:14] 📦 Processed dependencies!
+[14:56:16] 🔄 Updated app!
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA COLMEIAS
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA SOUTO DA CARPALHOSA
+Data mais recente: 24/03/2026
+Localização encontrada: FARMÁCIA ILHA
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA NOVA DA VILA
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:689 in code_to_exec                                     
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:1025 in <module>                     
+                                                                                
+    1022                                                                        
+    1023                                                                        
+    1024 if __name__ == "__main__":                                             
+  ❱ 1025 │   main()                                                             
+    1026                                                                        
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:939 in main                          
+                                                                                
+     936 │   │   │   df_view = df_final.drop(columns=['CLA'], errors='ignore')  
+     937 │   │   │   st_styled = df_view.style.apply(aplicar_destaques, axis=1  
+     938 │   │   │   │   {'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P  
+  ❱  939 │   │   │   st.dataframe(st_styled, width='stretch', hide_index=True)  
+     940 │   │   │                                                              
+     941 │   │   │   # 5. Exportação Excel                                      
+     942 │   │   │   excel_data = formatar_excel(df_view)                       
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+  util.py:532 in wrapped_func                                                   
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/arrow.p  
+  y:725 in dataframe                                                            
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/lib/pan  
+  das_styler_utils.py:52 in marshall_styler                                     
+────────────────────────────────────────────────────────────────────────────────
+StreamlitAPIException: The dataframe has `265700` cells, but the maximum number 
+of cells allowed to be rendered by Pandas Styler is configured to `262144`. To 
+allow more cells to be styled, you can change the `"styler.render.max_elements"`
+config. For example: `pd.set_option("styler.render.max_elements", 265700)`
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:689 in code_to_exec                                     
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:1025 in <module>                     
+                                                                                
+    1022                                                                        
+    1023                                                                        
+    1024 if __name__ == "__main__":                                             
+  ❱ 1025 │   main()                                                             
+    1026                                                                        
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:939 in main                          
+                                                                                
+     936 │   │   │   df_view = df_final.drop(columns=['CLA'], errors='ignore')  
+     937 │   │   │   st_styled = df_view.style.apply(aplicar_destaques, axis=1  
+     938 │   │   │   │   {'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P  
+  ❱  939 │   │   │   st.dataframe(st_styled, width='stretch', hide_index=True)  
+     940 │   │   │                                                              
+     941 │   │   │   # 5. Exportação Excel                                      
+     942 │   │   │   excel_data = formatar_excel(df_view)                       
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+  util.py:532 in wrapped_func                                                   
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/arrow.p  
+  y:725 in dataframe                                                            
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/lib/pan  
+  das_styler_utils.py:52 in marshall_styler                                     
+────────────────────────────────────────────────────────────────────────────────
+StreamlitAPIException: The dataframe has `265700` cells, but the maximum number 
+of cells allowed to be rendered by Pandas Styler is configured to `262144`. To 
+allow more cells to be styled, you can change the `"styler.render.max_elements"`
+config. For example: `pd.set_option("styler.render.max_elements", 265700)`
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:689 in code_to_exec                                     
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:1025 in <module>                     
+                                                                                
+    1022                                                                        
+    1023                                                                        
+    1024 if __name__ == "__main__":                                             
+  ❱ 1025 │   main()                                                             
+    1026                                                                        
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:939 in main                          
+                                                                                
+     936 │   │   │   df_view = df_final.drop(columns=['CLA'], errors='ignore')  
+     937 │   │   │   st_styled = df_view.style.apply(aplicar_destaques, axis=1  
+     938 │   │   │   │   {'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P  
+  ❱  939 │   │   │   st.dataframe(st_styled, width='stretch', hide_index=True)  
+     940 │   │   │                                                              
+     941 │   │   │   # 5. Exportação Excel                                      
+     942 │   │   │   excel_data = formatar_excel(df_view)                       
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+  util.py:532 in wrapped_func                                                   
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/arrow.p  
+  y:725 in dataframe                                                            
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/lib/pan  
+  das_styler_utils.py:52 in marshall_styler                                     
+────────────────────────────────────────────────────────────────────────────────
+StreamlitAPIException: The dataframe has `265700` cells, but the maximum number 
+of cells allowed to be rendered by Pandas Styler is configured to `262144`. To 
+allow more cells to be styled, you can change the `"styler.render.max_elements"`
+config. For example: `pd.set_option("styler.render.max_elements", 265700)`
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA COLMEIAS
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA SOUTO DA CARPALHOSA
+Data mais recente: 24/03/2026
+Localização encontrada: FARMÁCIA ILHA
+Data mais recente: 24/03/2026
+Localização encontrada: FARMACIA NOVA DA VILA
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:689 in code_to_exec                                     
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:1025 in <module>                     
+                                                                                
+    1022                                                                        
+    1023                                                                        
+    1024 if __name__ == "__main__":                                             
+  ❱ 1025 │   main()                                                             
+    1026                                                                        
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:939 in main                          
+                                                                                
+     936 │   │   │   df_view = df_final.drop(columns=['CLA'], errors='ignore')  
+     937 │   │   │   st_styled = df_view.style.apply(aplicar_destaques, axis=1  
+     938 │   │   │   │   {'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P  
+  ❱  939 │   │   │   st.dataframe(st_styled, width='stretch', hide_index=True)  
+     940 │   │   │                                                              
+     941 │   │   │   # 5. Exportação Excel                                      
+     942 │   │   │   excel_data = formatar_excel(df_view)                       
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+  util.py:532 in wrapped_func                                                   
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/arrow.p  
+  y:725 in dataframe                                                            
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/lib/pan  
+  das_styler_utils.py:52 in marshall_styler                                     
+────────────────────────────────────────────────────────────────────────────────
+StreamlitAPIException: The dataframe has `265700` cells, but the maximum number 
+of cells allowed to be rendered by Pandas Styler is configured to `262144`. To 
+allow more cells to be styled, you can change the `"styler.render.max_elements"`
+config. For example: `pd.set_option("styler.render.max_elements", 265700)`
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:689 in code_to_exec                                     
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:1025 in <module>                     
+                                                                                
+    1022                                                                        
+    1023                                                                        
+    1024 if __name__ == "__main__":                                             
+  ❱ 1025 │   main()                                                             
+    1026                                                                        
+                                                                                
+  /mount/src/orders_master_infoprex/app.py:939 in main                          
+                                                                                
+     936 │   │   │   df_view = df_final.drop(columns=['CLA'], errors='ignore')  
+     937 │   │   │   st_styled = df_view.style.apply(aplicar_destaques, axis=1  
+     938 │   │   │   │   {'PVP_Médio': '{:.2f}', 'P.CUSTO_Médio': '{:.2f}', 'P  
+  ❱  939 │   │   │   st.dataframe(st_styled, width='stretch', hide_index=True)  
+     940 │   │   │                                                              
+     941 │   │   │   # 5. Exportação Excel                                      
+     942 │   │   │   excel_data = formatar_excel(df_view)                       
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+  util.py:532 in wrapped_func                                                   
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/arrow.p  
+  y:725 in dataframe                                                            
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/elements/lib/pan  
+  das_styler_utils.py:52 in marshall_styler                                     
+────────────────────────────────────────────────────────────────────────────────
+StreamlitAPIException: The dataframe has `265700` cells, but the maximum number 
+of cells allowed to be rendered by Pandas Styler is configured to `262144`. To 
+allow more cells to be styled, you can change the `"styler.render.max_elements"`
+config. For example: `pd.set_option("styler.render.max_elements", 265700)`
