@@ -499,6 +499,22 @@ def aplicar_destaques(linha):
             idx_proposta = linha.index.get_loc('Proposta')
             estilos[idx_proposta] = 'background-color: red; color: white; font-weight: bold'
 
+    if 'DTVAL' in linha.index and pd.notna(linha['DTVAL']):
+        dtval_str = str(linha['DTVAL']).strip()
+        if '/' in dtval_str:
+            try:
+                mes_ano = dtval_str.split('/')
+                if len(mes_ano) == 2:
+                    mes_val = int(mes_ano[0])
+                    ano_val = int(mes_ano[1])
+                    hoje = datetime.now()
+                    diff_meses = (ano_val - hoje.year) * 12 + (mes_val - hoje.month)
+                    if diff_meses <= 4:
+                        idx_dtval = linha.index.get_loc('DTVAL')
+                        estilos[idx_dtval] = 'background-color: orange; color: black; font-weight: bold'
+            except:
+                pass
+
     return estilos
 
 
@@ -518,6 +534,9 @@ def formatar_excel(dataframe_final):
     fill_vermelho = PatternFill(
         start_color="FF0000", end_color="FF0000", fill_type="solid")
     font_vermelho = Font(bold=True, color="FFFFFF")
+    fill_laranja = PatternFill(
+        start_color="FFA500", end_color="FFA500", fill_type="solid")
+    font_laranja = Font(bold=True, color="000000")
 
     headers = [cell.value for cell in ws[1]]
     col_localizacao = headers.index(
@@ -528,6 +547,7 @@ def formatar_excel(dataframe_final):
     col_proposta = headers.index('Proposta') + \
         1 if 'Proposta' in headers else None
     col_t_uni = headers.index('T Uni') + 1 if 'T Uni' in headers else None
+    col_dtval = headers.index('DTVAL') + 1 if 'DTVAL' in headers else None
 
     for row_idx, row in enumerate(ws.iter_rows(min_row=2, max_row=ws.max_row), start=2):
         if col_localizacao and row[col_localizacao - 1].value in ['ZGrupo_Total', 'Zgrupo_Total']:
@@ -545,6 +565,22 @@ def formatar_excel(dataframe_final):
             cell_proposta = ws.cell(row=row_idx, column=col_proposta)
             cell_proposta.fill = fill_vermelho
             cell_proposta.font = font_vermelho
+        if col_dtval and row[col_dtval - 1].value is not None:
+            dtval_str = str(row[col_dtval - 1].value).strip()
+            if '/' in dtval_str:
+                try:
+                    mes_ano = dtval_str.split('/')
+                    if len(mes_ano) == 2:
+                        mes_val = int(mes_ano[0])
+                        ano_val = int(mes_ano[1])
+                        hoje = datetime.now()
+                        diff_meses = (ano_val - hoje.year) * 12 + (mes_val - hoje.month)
+                        if diff_meses <= 4:
+                            cell_dtval = ws.cell(row=row_idx, column=col_dtval)
+                            cell_dtval.fill = fill_laranja
+                            cell_dtval.font = font_laranja
+                except:
+                    pass
 
     output = BytesIO()
     wb.save(output)

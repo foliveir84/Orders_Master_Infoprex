@@ -114,7 +114,7 @@ def ler_ficheiro_infoprex(filepath, lista_cla=None, lista_codigos=None):
     colunas_vendas = [f'V{i}' for i in range(15)]
     
     # Colunas base solicitadas e necessárias para a lógica
-    colunas_base = ['CPR', 'NOM', 'LOCALIZACAO', 'SAC', 'PVP', 'PCU', 'DUC', 'DTVAL', 'CLA']
+    colunas_base = ['CPR', 'NOM', 'LOCALIZACAO', 'PVP', 'PCU', 'DUC', 'DTVAL', 'SAC', 'CLA']
     colunas_manter = colunas_base + colunas_vendas
     
     # Filtrar a dataframe apenas com as colunas que existem no ficheiro (evitar erros)
