@@ -792,7 +792,7 @@ def main():
             marcas_selecionadas = st.multiselect(
                 "🏷️ Filtrar por Marca:",
                 options=marcas_disponiveis,
-                default=None,
+                default=marcas_disponiveis,
                 placeholder="Selecione uma ou mais marcas para filtrar os resultados abaixo..."
             )
 
