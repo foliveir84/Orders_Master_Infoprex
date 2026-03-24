@@ -53,6 +53,7 @@ As tabelas são rigorosamente ordenadas de forma ascendente por:
 ## 5. Interface e Exportação
 *   **Sidebar:** Centraliza todos os uploads e filtros pré-processamento (Laboratórios, Códigos, Ficheiros Infoprex base e CSVs de Marcas).
 *   **Filtros UI Dinâmicos (`session_state`):** Filtros manipulados na interface principal (como Toggle de Média, Meses a Prever ou o Dropdown de Marcas) não forçam a releitura dos ficheiros. Eles interagem com as DataFrames guardadas em sessão para uma renderização e recálculo instantâneos.
+    *   *Nota Arquitetural sobre o Filtro de Marcas:* Para garantir que o dropdown de marcas atualize instantaneamente ao trocar de laboratório, a agregação pesada é executada *antes* da renderização do componente visual. Adicionalmente, o widget utiliza uma `key` dinâmica no Streamlit para evitar a persistência de estados (opções congeladas) do processamento anterior. Além disso, as opções do dropdown são extraídas da `df_base_agrupada` (já filtrada sem stock e sem vendas) em vez da `df_univ` (lista master não filtrada), garantindo que apenas as marcas com produtos "ativos" apareçam na lista, evitando que a seleção resulte numa tabela vazia.
 *   **Alertas Inteligentes:** Deteta se o utilizador alterou filtros na sidebar sem clicar em "Processar Dados" e avisa que os dados estão obsoletos.
 *   **Validação de Erros:** Se o utilizador carregar o ficheiro errado no local errado, o sistema apresenta um erro amigável em vez de crashar.
 *   **Destaques Visuais (Web e Excel):**

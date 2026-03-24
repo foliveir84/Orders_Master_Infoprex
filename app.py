@@ -850,9 +850,9 @@ def main():
 
     # Filtro Dinâmico de Marcas
     marcas_selecionadas = []
-    if 'df_univ' in st.session_state and not st.session_state.df_univ.empty and 'MARCA' in st.session_state.df_univ.columns:
+    if 'df_base_agrupada' in st.session_state and not st.session_state.df_base_agrupada.empty and 'MARCA' in st.session_state.df_base_agrupada.columns:
         # Extrair apenas marcas válidas (não nulas)
-        marcas_disponiveis = st.session_state.df_univ['MARCA'].dropna(
+        marcas_disponiveis = st.session_state.df_base_agrupada['MARCA'].dropna(
         ).unique().tolist()
         marcas_disponiveis = sorted(
             [str(m) for m in marcas_disponiveis if str(m).strip()])
