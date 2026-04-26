@@ -423,7 +423,7 @@ def unir_sell_out_com_esgotados(df_sell_out, df_esgotados):
                       'Data prevista para reposição', 'TimeDelta']],
         left_on='CÓDIGO', right_on='Número de registo', how='left'
     )
-    df_completa.drop(columns='Número de registo', axis=1,
+    df_completa.drop(columns='Número de registo',
                      inplace=True, errors='ignore')
     return df_completa
 
@@ -444,7 +444,7 @@ def unir_df_na_comprar_a_df_clean(df_clean, df_nao_comprar):
                               'CÓDIGO_STR', 'LOCALIZACAO'], right_on=['CNP', 'FARMACIA'], how='left')
     df_clean.rename(columns={'DATA': 'DATA_OBS'}, inplace=True)
     df_clean.drop(columns=['CNP', 'FARMACIA', 'CÓDIGO_STR'],
-                  axis=1, inplace=True, errors='ignore')
+                  inplace=True, errors='ignore')
     return df_clean
 
 
@@ -476,7 +476,7 @@ def processar_logica_negocio(df, df_esgotados, df_nao_comprar, cols_selecionadas
                 left_on='CÓDIGO_STR', right_on='Número de registo', how='left'
             )
             df.drop(columns=['Número de registo', 'CÓDIGO_STR'],
-                    axis=1, inplace=True, errors='ignore')
+                    inplace=True, errors='ignore')
 
             df = calcular_proposta_esgotados(df)
 
@@ -490,7 +490,7 @@ def processar_logica_negocio(df, df_esgotados, df_nao_comprar, cols_selecionadas
             df.rename(columns={'Data de início de rutura': 'DIR',
                       'Data prevista para reposição': 'DPR'}, inplace=True)
             if 'TimeDelta' in df.columns:
-                df.drop(columns='TimeDelta', axis=1, inplace=True)
+                df.drop(columns='TimeDelta', inplace=True)
         except Exception as e:
             st.warning(
                 f"⚠️ Ocorreu um erro ao unir a dataframe de esgotados. {str(e)}")
@@ -506,20 +506,20 @@ def processar_logica_negocio(df, df_esgotados, df_nao_comprar, cols_selecionadas
                               right_on='CNP', how='left')
                 df.rename(columns={'DATA': 'DATA_OBS'}, inplace=True)
                 if 'CNP' in df.columns:
-                    df.drop(columns=['CNP'], axis=1, inplace=True)
+                    df.drop(columns=['CNP'], inplace=True)
             else:
                 df = df.merge(df_nao_comprar, left_on=['CÓDIGO_STR', 'LOCALIZACAO'], right_on=[
                               'CNP', 'FARMACIA'], how='left')
                 df.rename(columns={'DATA': 'DATA_OBS'}, inplace=True)
-                df.drop(columns=['CNP', 'FARMACIA'], axis=1,
+                df.drop(columns=['CNP', 'FARMACIA'],
                         inplace=True, errors='ignore')
-            df.drop(columns=['CÓDIGO_STR'], axis=1,
+            df.drop(columns=['CÓDIGO_STR'],
                     inplace=True, errors='ignore')
         except Exception as e:
             st.warning(f"⚠️ Erro ao integrar produtos a não comprar: {str(e)}")
 
     if 'Media' in df.columns:
-        df.drop(columns='Media', axis=1, inplace=True)
+        df.drop(columns='Media', inplace=True)
 
     return df
 
