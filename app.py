@@ -9,7 +9,9 @@ from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill
 from processar_infoprex import ler_ficheiro_infoprex, extrair_codigos_txt
-from stockreorder import gerar_plano_redistribuicao
+
+from motor_redistribuicao import gerar_plano_redistribuicao_compat as gerar_plano_redistribuicao_v2
+from stockreorder import gerar_plano_redistribuicao as gerar_plano_redistribuicao_v1
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -978,6 +980,9 @@ def main():
                 dias_imun = st.slider(
                     "Dias de Imunidade para Produto Novo", 0, 180, 90)
 
+            st.write("") # Espaçador
+            use_motor_v2 = st.toggle("🚀 Usar Novo Motor de Redistribuição V2 (3 Camadas + Failsafes)", value=True, help="Ativa a versão atualizada do motor que evita concentrações do grossista em certas farmácias e aplica um failsafe dinâmico.")
+
             if st.button("🚀 Gerar Plano de Redistribuição", type="primary", width='stretch'):
                 with st.spinner("A gerar transferências inteligentes..."):
                     df_base_reorder = st.session_state.df_base_detalhada.copy()
@@ -1004,7 +1009,10 @@ def main():
                     cols_vendas = [df_base_reorder.columns[i]
                                    for i in indice_colunas]
 
-                    plano_df = gerar_plano_redistribuicao(
+                    # Seleção Dinâmica do Motor
+                    motor_fn = gerar_plano_redistribuicao_v2 if use_motor_v2 else gerar_plano_redistribuicao_v1
+                    
+                    plano_df = motor_fn(
                         df_base_reorder,
                         st.session_state.df_univ,
                         meses_val,

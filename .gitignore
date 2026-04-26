@@ -8,6 +8,9 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+APAGAR/
+tests/
+
 
 # Ficheiros de dados / testes
 *.csv
@@ -18,6 +21,9 @@ redistribuicao_v2.py
 main_agrupa.py
 analyze_excel.py
 analyze_zentiva.py
+.pytest_cache/
+*.txt
+main_agrupa.py
 
 # Editor / OS
 .vscode/
